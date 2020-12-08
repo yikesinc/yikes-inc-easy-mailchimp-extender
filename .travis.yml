@@ -1,60 +1,72 @@
+sudo: false
+dist: trusty
+
 language: php
 
-sudo: false
-
-php:
-  - 5.4
-  - 5.5
-  - 5.6
-  - 7.0
-  # https://hhvm.com/blog/2018/09/12/end-of-php-support-future-of-hack.html
-  #- hhvm
-
-env:
-  - WP_VERSION=latest WP_MULTISITE=0
-  - WP_VERSION=4.9 WP_MULTISITE=0
-  - WP_VERSION=4.6 WP_MULTISITE=0
-  - WP_VERSION=4.3 WP_MULTISITE=0
-  - WP_VERSION=4.0 WP_MULTISITE=0
+cache:
+  directories:
+    - $HOME/.composer/cache
 
 matrix:
   include:
-    - php: 5.3
-      dist: precise
-      env: WP_VERSION=4.9 WP_MULTISITE=0
-    - php: 5.4
-      env: WP_VERSION=latest WP_MULTISITE=1
-  exclude:
-    # https://github.com/WordPress/wordpress-develop/commit/ce8a915c06c42ef4e65e26ce39c20e5029e80293
+    - php: 7.3
+      env: WP_VERSION=latest
+    - php: 7.2
+      env: WP_VERSION=latest
+    - php: 7.1
+      env: WP_VERSION=latest
     - php: 7.0
-      env: WP_VERSION=4.6 WP_MULTISITE=0
-    - php: 7.0
-      env: WP_VERSION=4.3 WP_MULTISITE=0
-    - php: 7.0
-      env: WP_VERSION=4.0 WP_MULTISITE=0
+      env: WP_VERSION=latest
+    - php: 5.6
+      env: WP_VERSION=4.0
+    - php: 5.6
+      env: WP_VERSION=latest
+    - php: 5.6
+      env: WP_VERSION=trunk
+    - php: 5.6
+      env: WP_TRAVISCI=phpcs
 
 before_script:
+  - export PATH="$HOME/.composer/vendor/bin:$PATH"
   - |
-    phpunit --version
+    if [ -f ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/xdebug.ini ]; then
+      if [[ "$TRAVIS_PHP_VERSION" != 7.3 ]]; then
+        phpenv config-rm xdebug.ini
+      fi
+    else
+      echo "xdebug.ini does not exist"
+    fi
   - |
-    bash bin/install-wp-tests.sh wordpress_test root '' localhost "$WP_VERSION"
+    if [[ ! -z "$WP_VERSION" ]] ; then
+      bash bin/install-wp-tests.sh wordpress_test root '' localhost $WP_VERSION
+      composer global require "phpunit/phpunit=4.8.*|5.7.*"
+    fi
+  - |
+    if [[ "$WP_TRAVISCI" == "phpcs" ]] ; then
+      composer global require wp-coding-standards/wpcs
+      phpcs --config-set installed_paths $HOME/.composer/vendor/wp-coding-standards/wpcs
+    fi
 
 script:
   - |
-    if [[ "$TRAVIS_PHP_VERSION" == 5.5 && "$WP_VERSION" == latest && "$WP_MULTISITE" == 0 ]]; then
+    if [[ ! -z "$WP_VERSION" ]] ; then
+      if [[ "$TRAVIS_PHP_VERSION" == 7.3 ]]; then
         phpunit --coverage-clover=coverage.clover
-    else
+      else
         phpunit
+        WP_MULTISITE=1 phpunit
+      fi
+    fi
+  - |
+    if [[ "$WP_TRAVISCI" == "phpcs" ]] ; then
+      phpcs
     fi
 
 after_script:
   - |
-    if [[ "$TRAVIS_PHP_VERSION" == 5.5 && "$WP_VERSION" == latest && "$WP_MULTISITE" == 0 ]]; then
-        wget "https://scrutinizer-ci.com/ocular.phar"
-    fi
-  - |
-    if [[ "$TRAVIS_PHP_VERSION" == 5.5 && "$WP_VERSION" == latest && "$WP_MULTISITE" == 0 ]]; then
-        php ocular.phar code-coverage:upload --format=php-clover coverage.clover
+    if [[ "$TRAVIS_PHP_VERSION" == 7.3 ]]; then
+      wget "https://scrutinizer-ci.com/ocular.phar"
+      php ocular.phar code-coverage:upload --format=php-clover coverage.clover
     fi
 
 notifications:

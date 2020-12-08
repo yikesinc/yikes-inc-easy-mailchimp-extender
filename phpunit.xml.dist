@@ -7,8 +7,16 @@
 	convertWarningsToExceptions="true"
 	>
 	<testsuites>
-		<testsuite>
+		<testsuite name="Yikes Inc. Easy Mailchimp Extender Test Suite">
 			<directory prefix="test-" suffix=".php">./tests/</directory>
 		</testsuite>
 	</testsuites>
+	<filter>
+		<whitelist addUncoveredFilesFromWhitelist="true">
+			<directory>./admin</directory>
+			<directory>./blocks</directory>
+			<directory>./includes</directory>
+			<directory>./public</directory>
+		</whitelist>
+	</filter>
 </phpunit>
