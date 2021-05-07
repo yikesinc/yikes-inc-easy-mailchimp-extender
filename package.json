@@ -27,7 +27,7 @@
 		"grunt-contrib-cssmin": "^3.0.0",
 		"grunt-contrib-uglify-es": "^3.3.0",
 		"grunt-pot": "^0.3.0",
-		"lodash": ">=4.17.13",
+		"lodash": ">=4.17.21",
 		"macaddress": ">=0.2.9",
 		"mini-css-extract-plugin": "^0.8.0",
 		"node-sass": "^4.13.0",
